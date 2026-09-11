@@ -1,187 +1,639 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plataforma de Monitoreo - Diagnóstico Integrado</title>
-  
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Informe Mensual MML - Monitoreo de Medios</title>
 
-  <style>
-    :root {
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --primary: #1e3a8a;
-      --accent: #2563eb;
-      --danger: #ef4444;
-      --success: #10b981;
-    }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css" />
 
-    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #0f172a; }
-    .container { max-width: 1200px; margin: 0 auto; }
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
-    /* Box de estado y errores */
-    #status-box {
-      background: #e0f2fe; border: 1px solid #0284c7; color: #0369a1;
-      padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;
-    }
-    #status-box.error { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
-    #status-box.success { background: #f0fdf4; border-color: #16a34a; color: #166534; }
+<style>
+:root{
+  --bg-color:#f8fafc; --card-bg:#ffffff; --primary:#002f80; --primary-light:#2563eb;
+  --text-dark:#0f172a; --text-muted:#64748b; --border:#e2e8f0;
+  --pos:#10b981; --neu:#f59e0b; --neg:#ef4444;
+  --shadow-sm:0 2px 4px rgba(0,0,0,.02); --shadow-md:0 4px 20px -2px rgba(0,0,0,.04);
+  --shadow-hover:0 10px 25px -5px rgba(0,47,128,.08); --radius:16px;
+}
+*{box-sizing:border-box;font-family:'Inter',sans-serif;}
+body{margin:0;padding:12px;background:var(--bg-color);color:var(--text-dark);}
+header{
+  display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;
+  padding:12px 20px;margin-bottom:14px;background:var(--card-bg);border-radius:var(--radius);
+  border:1px solid var(--border);box-shadow:var(--shadow-sm);
+}
+.header-left{display:flex;align-items:center;gap:14px;}
+.logo-mml{height:42px;width:auto;object-fit:contain;}
+.header-left-texts h1{margin:0;font-size:19px;color:var(--primary);font-weight:900;letter-spacing:-.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.header-left-texts p{margin:2px 0 0;font-size:12px;color:var(--text-muted);font-weight:600;letter-spacing:.5px;}
+.dev-credits{font-size:10px;color:var(--text-muted);opacity:.75;margin-top:2px;}
+.nav-buttons{display:flex;gap:6px;background:var(--bg-color);padding:5px;border-radius:10px;border:1px solid var(--border);flex-wrap:wrap;}
+.nav-btn{background:transparent;border:none;color:var(--text-muted);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;transition:.2s;}
+.nav-btn.active{background:var(--card-bg);color:var(--primary);box-shadow:var(--shadow-sm);font-weight:700;}
+.nav-btn:hover:not(.active){color:var(--text-dark);background:rgba(0,0,0,.03);}
+.filters{display:flex;gap:10px;align-items:center;font-size:13px;font-weight:600;flex-wrap:wrap;}
+select{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;background:#fff;cursor:pointer;outline:none;}
+select:focus{border-color:var(--primary-light);}
 
-    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-    .kpi-card { background: var(--card); padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid var(--accent); }
-    .kpi-title { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; }
-    .kpi-value { font-size: 22px; font-weight: bold; margin-top: 5px; }
+.view{display:none;}
+.view.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
-    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
-    .col-8 { grid-column: span 8; }
-    .col-4 { grid-column: span 4; }
-    .col-12 { grid-column: span 12; }
+.grid{display:grid;gap:16px;margin-bottom:16px;}
+.g4{grid-template-columns:repeat(4,1fr);}
+.g3{grid-template-columns:repeat(3,1fr);}
+.g2{grid-template-columns:repeat(2,1fr);}
+.g12{grid-template-columns:repeat(12,1fr);}
+.span4{grid-column:span 4;} .span6{grid-column:span 6;} .span8{grid-column:span 8;} .span12{grid-column:span 12;}
 
-    @media (max-width: 768px) { .col-8, .col-4 { grid-column: span 12; } }
+.card{
+  background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);
+  padding:16px 20px;box-shadow:var(--shadow-md);transition:.2s;min-height:0;display:flex;flex-direction:column;
+}
+.card:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px);}
+.card h3{margin:0 0 12px;font-size:12.5px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px;}
+.card p.note{font-size:11px;color:var(--text-muted);margin:6px 0 0;font-style:italic;}
+.chart-box{flex:1;position:relative;min-height:280px;}
+.chart-box.tall{min-height:380px;}
+canvas{width:100% !important;height:100% !important;}
 
-    .panel { background: var(--card); padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    th { background: #f1f5f9; }
-  </style>
+.kpi-box{
+  text-align:center;color:#fff;padding:22px;border-radius:var(--radius);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  background:linear-gradient(135deg,var(--primary),var(--primary-light));
+  box-shadow:var(--shadow-md);position:relative;overflow:hidden;
+}
+.kpi-box.pos{background:linear-gradient(135deg,#059669,var(--pos));}
+.kpi-box.neu{background:linear-gradient(135deg,#b45309,var(--neu));}
+.kpi-box.neg{background:linear-gradient(135deg,#991b1b,var(--neg));}
+.kpi-bg-icon{position:absolute;right:-16px;bottom:-16px;font-size:120px;opacity:.08;color:#fff;pointer-events:none;}
+.kpi-box h4{margin:0 0 6px;font-size:12px;font-weight:600;opacity:.9;letter-spacing:1px;z-index:1;}
+.kpi-box h2{margin:0;font-size:38px;font-weight:900;letter-spacing:-1px;z-index:1;}
+.kpi-sub{font-size:11px;margin-top:6px;opacity:.85;z-index:1;}
+
+.rank-list{list-style:none;margin:0;padding:0;flex:1;overflow:auto;}
+.rank-list li{display:flex;justify-content:space-between;align-items:center;padding:9px 4px;border-bottom:1px dashed var(--border);font-size:13px;}
+.rank-list li:last-child{border-bottom:none;}
+.rank-list .rk-name{font-weight:600;color:var(--text-dark);}
+.rank-list .rk-val{font-weight:800;color:var(--primary);background:#eef2ff;padding:3px 10px;border-radius:20px;font-size:12px;}
+.rank-list .rk-val.neg{color:#991b1b;background:#fee2e2;}
+
+.wordcloud{flex:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px;padding:10px;overflow:auto;}
+.wordcloud span{font-weight:800;color:var(--primary-light);line-height:1;}
+
+.heatmap{display:grid;grid-template-columns:70px repeat(24,1fr);gap:2px;font-size:9px;flex:1;}
+.heatmap .hcell{aspect-ratio:1/1;border-radius:3px;}
+.heatmap .hlabel{display:flex;align-items:center;font-weight:700;color:var(--text-muted);font-size:10px;}
+
+.insight-box{background:#eef4ff;border-left:4px solid var(--primary-light);border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.5;color:var(--text-dark);margin-bottom:14px;}
+.insight-box b{color:var(--primary);}
+.alert-item{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;}
+.alert-item:last-child{border-bottom:none;}
+.alert-item i{color:var(--neg);font-size:18px;margin-top:1px;}
+
+#loading{position:fixed;inset:0;background:rgba(248,250,252,.92);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--primary);font-weight:800;font-size:16px;gap:14px;}
+.spinner{width:38px;height:38px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+@media(max-width:960px){
+  .g4,.g3,.g2,.g12{grid-template-columns:1fr;}
+  .span4,.span6,.span8,.span12{grid-column:span 1;}
+  .heatmap{grid-template-columns:50px repeat(24,minmax(14px,1fr));overflow-x:auto;}
+}
+</style>
 </head>
 <body>
 
-<div class="container">
-  
-  <!-- Panel de Diagnóstico -->
-  <div id="status-box">
-    <strong>Estado de Conexión:</strong> <span id="status-text">Iniciando conexión con Google Sheets...</span>
-    <div id="debug-info" style="margin-top: 5px; font-size: 12px; font-family: monospace;"></div>
-  </div>
+<div id="loading"><div class="spinner"></div>Cargando datos del informe...</div>
 
-  <!-- Dashboard -->
-  <div class="kpi-row">
-    <div class="kpi-card"><div class="kpi-title">Menciones</div><div class="kpi-value" id="kpi-menciones">0</div></div>
-    <div class="kpi-card"><div class="kpi-title">Valorización AVE</div><div class="kpi-value" id="kpi-ave">S/ 0</div></div>
-    <div class="kpi-card"><div class="kpi-title">% Positivo</div><div class="kpi-value" id="kpi-pos">0%</div></div>
-    <div class="kpi-card"><div class="kpi-title">% Negativo</div><div class="kpi-value" id="kpi-neg">0%</div></div>
-  </div>
-
-  <div class="grid">
-    <div class="col-8">
-      <div class="panel">
-        <strong>Evolución de Impactos</strong>
-        <canvas id="chartEvolucion" height="120" style="margin-top:15px;"></canvas>
-      </div>
-    </div>
-
-    <div class="col-4">
-      <div class="panel">
-        <strong>Tipos de Medio</strong>
-        <canvas id="chartMedios" height="200" style="margin-top:15px;"></canvas>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <div class="panel">
-        <strong>Vista Previa de Datos Detectados</strong>
-        <div style="overflow-x:auto; margin-top:10px;">
-          <table>
-            <thead id="table-head"></thead>
-            <tbody id="table-body"></tbody>
-          </table>
-        </div>
-      </div>
+<header>
+  <div class="header-left">
+    <img src="images.png" alt="Logo MML" class="logo-mml" onerror="this.style.display='none'">
+    <div class="header-left-texts">
+      <h1><i class="ph-fill ph-newspaper"></i> Informe Mensual de Medios</h1>
+      <p>MUNICIPALIDAD METROPOLITANA DE LIMA</p>
+      <span class="dev-credits">Desarrollado por Diego Pongo y Mariel Ramírez</span>
     </div>
   </div>
+  <div class="nav-buttons">
+    <button class="nav-btn active" onclick="switchView(event,'general')"><i class="ph ph-squares-four"></i> General</button>
+    <button class="nav-btn" onclick="switchView(event,'tematico')"><i class="ph ph-hash"></i> Temático</button>
+    <button class="nav-btn" onclick="switchView(event,'cruces')"><i class="ph ph-git-merge"></i> Cruces</button>
+    <button class="nav-btn" onclick="switchView(event,'cualitativo')"><i class="ph ph-medal"></i> Cualitativo</button>
+    <button class="nav-btn" onclick="switchView(event,'avanzado')"><i class="ph ph-brain"></i> Avanzado</button>
+  </div>
+  <div class="filters">
+    <label style="color:var(--text-muted)"><i class="ph ph-calendar-blank"></i> Mes:</label>
+    <select id="month-select" onchange="applyFilter()">
+      <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+      <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
+      <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+      <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+    </select>
+  </div>
+</header>
 
+<!-- ===================== VISTA GENERAL ===================== -->
+<div id="view-general" class="view active">
+  <div class="grid g4">
+    <div class="kpi-box"><i class="ph-fill ph-megaphone kpi-bg-icon"></i><h4>TOTAL MENCIONES</h4><h2 id="k-total">0</h2><span class="kpi-sub" id="k-total-trend">-- vs mes ant.</span></div>
+    <div class="kpi-box" style="background:linear-gradient(135deg,#0f766e,#14b8a6)"><i class="ph-fill ph-wallet kpi-bg-icon"></i><h4>AHORRO PUBLICITARIO (AVE)</h4><h2 id="k-ave">S/ 0</h2><span class="kpi-sub">*Solo menciones positivas</span></div>
+    <div class="kpi-box pos"><i class="ph-fill ph-smiley kpi-bg-icon"></i><h4>% POSITIVO</h4><h2 id="k-pos">0%</h2><span class="kpi-sub" id="k-pos-n">0 menciones</span></div>
+    <div class="kpi-box neg"><i class="ph-fill ph-smiley-sad kpi-bg-icon"></i><h4>% NEGATIVO</h4><h2 id="k-neg">0%</h2><span class="kpi-sub" id="k-neg-n">0 menciones</span></div>
+  </div>
+
+  <div class="grid g12">
+    <div class="card span8"><h3><i class="ph ph-trend-up"></i> Evolución diaria de menciones</h3><div class="chart-box"><canvas id="c-daily"></canvas></div></div>
+    <div class="card span4"><h3><i class="ph ph-pie-chart"></i> Tipo de Medio (%)</h3><div class="chart-box"><canvas id="c-medio"></canvas></div></div>
+  </div>
+
+  <div class="grid g12">
+    <div class="card span6"><h3><i class="ph ph-activity"></i> Línea cruzada de sentimiento diario</h3><div class="chart-box"><canvas id="c-sent-daily"></canvas></div></div>
+    <div class="card span6"><h3><i class="ph ph-calendar"></i> Evolución mensual comparativa (Ene–Ago)</h3><div class="chart-box"><canvas id="c-monthly"></canvas></div></div>
+  </div>
+
+  <div class="grid g12">
+    <div class="card span12"><h3><i class="ph ph-broadcast"></i> Tendencia multicanal por mes (Tipo de Medio)</h3><div class="chart-box"><canvas id="c-multicanal"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ===================== VISTA TEMÁTICO ===================== -->
+<div id="view-tematico" class="view">
+  <div class="grid g2">
+    <div class="card"><h3><i class="ph ph-hash"></i> Temática más cubierta (Top 10)</h3><div class="chart-box tall"><canvas id="c-tema"></canvas></div></div>
+    <div class="card"><h3><i class="ph ph-map-pin"></i> Origen del Posicionamiento</h3><div class="chart-box tall"><canvas id="c-origen"></canvas></div></div>
+  </div>
+  <div class="grid g12">
+    <div class="card span12">
+      <h3><i class="ph ph-users-three"></i> Comparativa Entidad vs. Vocero Principal</h3>
+      <p class="note" style="margin-bottom:8px">Se agrupa automáticamente por las categorías más frecuentes de "QUIÉN". Puedes ajustar las palabras clave en el código (ENTITY_KEYWORD / VOCERO_KEYWORD) si tu columna usa otros nombres.</p>
+      <div class="chart-box"><canvas id="c-actor"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== VISTA CRUCES ===================== -->
+<div id="view-cruces" class="view">
+  <div class="grid g2">
+    <div class="card"><h3><i class="ph ph-scatter-chart"></i> Matriz de Impacto vs. Sentimiento</h3>
+      <p class="note">Eje X: alcance estimado del medio (AVE). Eje Y: sentimiento (-1 negativo · 0 neutro · 1 positivo). Tamaño de burbuja = nº de menciones.</p>
+      <div class="chart-box tall"><canvas id="c-matriz"></canvas></div>
+    </div>
+    <div class="card"><h3><i class="ph ph-chart-bar"></i> Sentimiento cruzado por Tipo de Medio (100%)</h3><div class="chart-box tall"><canvas id="c-stack-medio"></canvas></div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><h3><i class="ph ph-chart-bar"></i> Sentimiento cruzado por Temática (100%)</h3><div class="chart-box tall"><canvas id="c-stack-tema"></canvas></div></div>
+    <div class="card"><h3><i class="ph ph-users"></i> Evolución del sentimiento: Vocero vs. Entidad</h3><div class="chart-box tall"><canvas id="c-actor-sent"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ===================== VISTA CUALITATIVO ===================== -->
+<div id="view-cualitativo" class="view">
+  <div class="grid g3">
+    <div class="card"><h3><i class="ph ph-ranking"></i> Ranking: más menciones</h3><ul class="rank-list" id="rk-top"></ul></div>
+    <div class="card"><h3><i class="ph ph-warning-circle"></i> Ranking: más notas críticas</h3><ul class="rank-list" id="rk-neg"></ul></div>
+    <div class="card"><h3><i class="ph ph-flag"></i> Hitos / Subtemáticas más cubiertas</h3><ul class="rank-list" id="rk-hitos"></ul></div>
+  </div>
+  <div class="grid g12">
+    <div class="card span12"><h3><i class="ph ph-cloud"></i> Nube de palabras — titulares y temas</h3>
+      <p class="note" style="margin-bottom:8px">Generada a partir de la columna de titular/banner si existe; si no, usa TEMA + QUIÉN + ORIGEN.</p>
+      <div class="wordcloud" id="wordcloud"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== VISTA AVANZADO ===================== -->
+<div id="view-avanzado" class="view">
+  <div id="insight-auto" class="insight-box"><i class="ph ph-sparkle"></i> Generando interpretación automática...</div>
+  <div class="grid g2">
+    <div class="card"><h3><i class="ph ph-bell-ringing"></i> Detección de anomalías (picos de negatividad)</h3>
+      <p class="note" style="margin-bottom:8px">Marca días donde las menciones negativas superan en +50% el promedio móvil de los 7 días previos.</p>
+      <div id="anomaly-list" style="flex:1;overflow:auto"></div>
+    </div>
+    <div class="card"><h3><i class="ph ph-chart-line"></i> Proyección de tendencia (forecast simple)</h3>
+      <p class="note">Estimación lineal basada en los últimos 6 meses. Es referencial, no un modelo estadístico avanzado.</p>
+      <div class="chart-box"><canvas id="c-forecast"></canvas></div>
+    </div>
+  </div>
+  <div class="grid g12">
+    <div class="card span12"><h3><i class="ph ph-grid-four"></i> Mapa de calor: día de la semana × hora</h3>
+      <p class="note" style="margin-bottom:8px" id="heatmap-note">Requiere una columna de hora (HORA) en el CSV. Si no existe, se muestra por día de la semana solamente.</p>
+      <div class="heatmap" id="heatmap"></div>
+    </div>
+  </div>
+  <div class="grid g12">
+    <div class="card span12">
+      <h3><i class="ph ph-info"></i> Módulos no incluidos en esta versión (fase 2)</h3>
+      <p style="font-size:13px;line-height:1.6;color:var(--text-muted);margin:0">
+        Diagrama de Sankey (flujo tema→medio), embudo de conversión de notas de prensa, radar predictivo por formato,
+        seguimiento de "efecto eco" entre medios y "vida útil de crisis" no se incluyen porque requieren datos que tu
+        CSV actual no registra (IDs de nota de prensa enviada, hora exacta de publicación, y trazabilidad de una misma
+        noticia entre distintos medios). Si agregas esas columnas a la hoja de cálculo, puedo construir esos módulos
+        sobre esta misma base.
+      </p>
+    </div>
+  </div>
 </div>
 
 <script>
-  const GOOGLE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2khLH7C3lCFCIV3ss1U5AV4SOL922Sld2rnPhSayp39VqgtlBV8ey63dxgCbur1nHiK-6CfNKB2B-/pub?gid=817460174&single=true&output=csv';
+Chart.register(ChartDataLabels, Chart.Annotation || (window['chartjs-plugin-annotation']||{}));
+Chart.defaults.color = '#64748b';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 12;
 
-  function setStatus(msg, type = '', debug = '') {
-    const box = document.getElementById('status-box');
-    document.getElementById('status-text').innerText = msg;
-    document.getElementById('debug-info').innerText = debug;
-    box.className = type;
+// ============ CONFIGURACIÓN ============
+const CSV_URL = 'PON_AQUI_TU_URL_DE_GOOGLE_SHEETS_CSV'; // <-- reemplaza con tu link "publicar como CSV"
+const ENTITY_KEYWORD = 'MUNICIPALIDAD'; // ajusta si tu columna QUIÉN usa otro nombre para la entidad
+const VOCERO_KEYWORD = 'ALCALDE';       // ajusta si tu columna QUIÉN usa otro nombre para el vocero
+const colors = { main:'#002f80', pos:'#10b981', neu:'#f59e0b', neg:'#ef4444', mainLight:'#2563eb', sky:'#60a5fa', teal:'#14b8a6' };
+const monthNames = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const dayNames = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+let rawData = [], filteredData = [], prevData = [], charts = {};
+
+Papa.parse(CSV_URL, {
+  download: true, header: true,
+  complete: function(results){
+    rawData = results.data.filter(r => Object.values(r).some(v => v && v.toString().trim() !== ''));
+    document.getElementById('month-select').value = new Date().getMonth();
+    applyFilter();
+    document.getElementById('loading').style.opacity = '0';
+    setTimeout(()=>document.getElementById('loading').style.display='none', 300);
+  },
+  error: function(){
+    document.getElementById('loading').innerHTML = '<div style="color:#991b1b;font-weight:700;max-width:340px;text-align:center">No se pudo cargar el CSV. Revisa que CSV_URL en el código apunte a tu hoja de Google Sheets publicada.</div>';
   }
+});
 
-  // Intentar descarga directa y fallback mediante proxy
-  function cargarDatos() {
-    Papa.parse(GOOGLE_CSV_URL, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        if (results.data && results.data.length > 0) {
-          setStatus(`Exitoso: Se cargaron ${results.data.length} filas desde Google Sheets.`, 'success');
-          renderDashboard(results.data);
-        } else {
-          setStatus('Advertencia: El enlace respondió pero no contiene filas de datos.', 'error');
-        }
-      },
-      error: function(err) {
-        setStatus('Error de conexión directa. Intentando vía Proxy CORS...', 'error', JSON.stringify(err));
-        cargarConProxy();
-      }
+function getCol(row, keyword){
+  const keys = Object.keys(row);
+  let key = keys.find(k => k.trim().toUpperCase() === keyword.trim().toUpperCase());
+  if(!key) key = keys.find(k => k.toUpperCase().includes(keyword.toUpperCase()));
+  return key ? row[key] : null;
+}
+function hasCol(rows, keyword){ return rows.length>0 && getCol(rows[0], keyword) !== null; }
+function parseCurrency(val){
+  if(!val) return 0;
+  let str = val.toString().trim().replace(/[^0-9.,-]/g,'');
+  if(str==='') return 0;
+  const lc=str.lastIndexOf(','), ld=str.lastIndexOf('.');
+  if(lc>ld) str=str.replace(/\./g,'').replace(',', '.'); else str=str.replace(/,/g,'');
+  const n=parseFloat(str); return isNaN(n)?0:n;
+}
+function parseDate(f){ if(!f) return null; const p=f.split('/'); if(p.length!==3) return null; return new Date(p[2],p[1]-1,p[0]); }
+function formatFriendlyDate(f){ const p=f.split('/'); return p.length===3 ? `${parseInt(p[0],10)} ${monthNames[parseInt(p[1],10)-1]}` : f; }
+function determineSentiment(val){
+  if(!val) return 'Neutro'; const v=val.toUpperCase();
+  if(v.includes('POS')) return 'Positiva'; if(v.includes('NEG')) return 'Negativa'; return 'Neutro';
+}
+function sentScore(s){ return s==='Positiva'?1:(s==='Negativa'?-1:0); }
+function groupData(rows, colName){
+  const res={}; rows.forEach(r=>{ const v=getCol(r,colName); if(v) res[v]=(res[v]||0)+1; });
+  return Object.entries(res).sort((a,b)=>b[1]-a[1]);
+}
+
+function switchView(evt, id){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  evt.target.closest('.nav-btn').classList.add('active');
+  document.getElementById('view-'+id).classList.add('active');
+}
+
+function applyFilter(){
+  const m = parseInt(document.getElementById('month-select').value);
+  const y = new Date().getFullYear();
+  const start=new Date(y,m,1), end=new Date(y,m+1,0,23,59,59);
+  const prevStart=new Date(y,m-1,1), prevEnd=new Date(y,m,0,23,59,59);
+  filteredData = rawData.filter(r=>{ const d=parseDate(getCol(r,'FECHA')); return d && d>=start && d<=end; });
+  prevData = rawData.filter(r=>{ const d=parseDate(getCol(r,'FECHA')); return d && d>=prevStart && d<=prevEnd; });
+  renderAll();
+}
+
+function renderAll(){
+  Object.values(charts).forEach(c=>c && c.destroy && c.destroy()); charts={};
+  renderKPIs();
+  renderGeneral();
+  renderTematico();
+  renderCruces();
+  renderCualitativo();
+  renderAvanzado();
+}
+
+// ============ KPIs ============
+function renderKPIs(){
+  const total = filteredData.length, prevTotal = prevData.length;
+  document.getElementById('k-total').innerText = total.toLocaleString('es-PE');
+  const diff = prevTotal>0 ? ((total-prevTotal)/prevTotal*100) : 0;
+  document.getElementById('k-total-trend').innerText = prevTotal>0 ? `${diff>=0?'+':''}${diff.toFixed(1)}% vs mes ant.` : 'sin datos del mes anterior';
+
+  let ave=0; filteredData.forEach(r=>{ if(determineSentiment(getCol(r,'CRITERIO'))==='Positiva'){ ave+=parseCurrency(getCol(r,'SOLES')); }});
+  document.getElementById('k-ave').innerText = new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN',maximumFractionDigits:0}).format(ave);
+
+  const pos = filteredData.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Positiva').length;
+  const neg = filteredData.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Negativa').length;
+  document.getElementById('k-pos').innerText = total>0? (pos*100/total).toFixed(1)+'%':'0%';
+  document.getElementById('k-neg').innerText = total>0? (neg*100/total).toFixed(1)+'%':'0%';
+  document.getElementById('k-pos-n').innerText = pos+' menciones';
+  document.getElementById('k-neg-n').innerText = neg+' menciones';
+}
+
+const tooltipConfig = { enabled:true, titleFont:{size:13}, bodyFont:{size:12}, padding:10, backgroundColor:'rgba(15,23,42,.9)', cornerRadius:8 };
+
+// ============ VISTA GENERAL ============
+function renderGeneral(){
+  const dayObj={}; filteredData.forEach(r=>{ const f=getCol(r,'FECHA'); if(f) dayObj[f]=(dayObj[f]||0)+1; });
+  const dayKeys = Object.keys(dayObj).sort((a,b)=>parseDate(a)-parseDate(b));
+  charts.daily = new Chart(document.getElementById('c-daily'), {
+    type:'line',
+    data:{ labels:dayKeys.map(formatFriendlyDate), datasets:[{label:'Menciones', data:dayKeys.map(k=>dayObj[k]), borderColor:colors.mainLight, backgroundColor:colors.mainLight+'22', fill:true, tension:.4, borderWidth:3, pointRadius:3}] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, legend:{display:false}, datalabels:{display:false}}, scales:{ y:{beginAtZero:true, grid:{borderDash:[4,4]}}, x:{grid:{display:false}} } }
+  });
+
+  const med = groupData(filteredData,'TIPO DE MEDIO');
+  charts.medio = new Chart(document.getElementById('c-medio'), {
+    type:'doughnut',
+    data:{ labels:med.map(x=>x[0]), datasets:[{data:med.map(x=>x[1]), backgroundColor:[colors.main,colors.mainLight,colors.sky,'#93c5fd','#bfdbfe'], borderWidth:2, borderColor:'#fff'}]},
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'45%', plugins:{ tooltip:tooltipConfig, legend:{position:'bottom', labels:{boxWidth:10,usePointStyle:true,font:{size:11}}}, datalabels:{color:'#fff', font:{weight:'bold',size:11}, formatter:(v)=>{ const t=filteredData.length; return t>0? `${(v*100/t).toFixed(0)}%`:'0%'; } } } }
+  });
+
+  const sentDaily = {Positiva:{}, Neutro:{}, Negativa:{}};
+  filteredData.forEach(r=>{ const s=determineSentiment(getCol(r,'CRITERIO')); const f=getCol(r,'FECHA'); if(f) sentDaily[s][f]=(sentDaily[s][f]||0)+1; });
+  charts.sentDaily = new Chart(document.getElementById('c-sent-daily'), {
+    type:'line',
+    data:{ labels:dayKeys.map(formatFriendlyDate), datasets:[
+      {label:'Positivo', data:dayKeys.map(d=>sentDaily.Positiva[d]||0), borderColor:colors.pos, backgroundColor:colors.pos, tension:.4, borderWidth:2.5, pointRadius:2},
+      {label:'Neutro', data:dayKeys.map(d=>sentDaily.Neutro[d]||0), borderColor:colors.neu, backgroundColor:colors.neu, tension:.4, borderWidth:2.5, pointRadius:2},
+      {label:'Negativo', data:dayKeys.map(d=>sentDaily.Negativa[d]||0), borderColor:colors.neg, backgroundColor:colors.neg, tension:.4, borderWidth:2.5, pointRadius:2}
+    ]},
+    options:{ interaction:{mode:'index',intersect:false}, responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, datalabels:{display:false}, legend:{labels:{usePointStyle:true,boxWidth:8,font:{size:11}}}}, scales:{y:{beginAtZero:true, grid:{borderDash:[4,4]}}, x:{grid:{display:false}}} }
+  });
+
+  // Evolución mensual comparativa (todo el dataset, no filtrado)
+  const monthCount = new Array(12).fill(0);
+  rawData.forEach(r=>{ const d=parseDate(getCol(r,'FECHA')); if(d) monthCount[d.getMonth()]++; });
+  charts.monthly = new Chart(document.getElementById('c-monthly'), {
+    type:'bar',
+    data:{ labels:monthNames.map(m=>m.toUpperCase()), datasets:[{label:'Menciones', data:monthCount, backgroundColor:colors.main, borderRadius:6}] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, legend:{display:false}, datalabels:{anchor:'end',align:'end',color:colors.main,font:{weight:'700',size:11}, formatter:v=>v||''}}, scales:{y:{display:false},x:{grid:{display:false}}} }
+  });
+
+  const mediaTypes = [...new Set(rawData.map(r=>getCol(r,'TIPO DE MEDIO')).filter(Boolean))];
+  const palette=[colors.main,colors.mainLight,colors.sky,colors.teal,colors.neu];
+  charts.multicanal = new Chart(document.getElementById('c-multicanal'), {
+    type:'line',
+    data:{ labels:monthNames.map(m=>m.toUpperCase()), datasets: mediaTypes.map((mt,i)=>{
+      const arr = new Array(12).fill(0);
+      rawData.forEach(r=>{ const d=parseDate(getCol(r,'FECHA')); if(d && getCol(r,'TIPO DE MEDIO')===mt) arr[d.getMonth()]++; });
+      return {label:mt, data:arr, borderColor:palette[i%palette.length], backgroundColor:palette[i%palette.length], tension:.3, borderWidth:2.5, pointRadius:2};
+    })},
+    options:{ interaction:{mode:'index',intersect:false}, responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, datalabels:{display:false}, legend:{position:'bottom', labels:{usePointStyle:true,boxWidth:8,font:{size:11}}}}, scales:{y:{beginAtZero:true, grid:{borderDash:[4,4]}}, x:{grid:{display:false}}} }
+  });
+}
+
+// ============ VISTA TEMÁTICO ============
+function renderTematico(){
+  const tema = groupData(filteredData,'TEMA').slice(0,10);
+  charts.tema = new Chart(document.getElementById('c-tema'), {
+    type:'bar',
+    data:{ labels:tema.map(x=>x[0]), datasets:[{data:tema.map(x=>x[1]), backgroundColor:colors.mainLight, borderRadius:6}] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, legend:{display:false}, datalabels:{anchor:'end',align:'end',color:colors.mainLight,font:{weight:'700',size:11}}}, scales:{x:{display:false},y:{grid:{display:false}}} }
+  });
+
+  const origen = groupData(filteredData,'ORIGEN').slice(0,10);
+  charts.origen = new Chart(document.getElementById('c-origen'), {
+    type:'bar',
+    data:{ labels:origen.map(x=>x[0]), datasets:[{data:origen.map(x=>x[1]), backgroundColor:colors.main, borderRadius:6}] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, legend:{display:false}, datalabels:{anchor:'end',align:'end',color:colors.main,font:{weight:'700',size:11}}}, scales:{x:{display:false},y:{grid:{display:false}}} }
+  });
+
+  // Comparativa Entidad vs Vocero (por mes, todo el año)
+  const isEntity = r => (getCol(r,'QUIÉN')||'').toUpperCase().includes(ENTITY_KEYWORD);
+  const isVocero = r => (getCol(r,'QUIÉN')||'').toUpperCase().includes(VOCERO_KEYWORD);
+  const entArr=new Array(12).fill(0), vocArr=new Array(12).fill(0);
+  rawData.forEach(r=>{ const d=parseDate(getCol(r,'FECHA')); if(!d) return; if(isEntity(r)) entArr[d.getMonth()]++; if(isVocero(r)) vocArr[d.getMonth()]++; });
+  charts.actor = new Chart(document.getElementById('c-actor'), {
+    type:'bar',
+    data:{ labels:monthNames.map(m=>m.toUpperCase()), datasets:[
+      {label:'Entidad ('+ENTITY_KEYWORD+')', data:entArr, backgroundColor:colors.main, borderRadius:6},
+      {label:'Vocero ('+VOCERO_KEYWORD+')', data:vocArr, backgroundColor:colors.sky, borderRadius:6}
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, legend:{position:'bottom'}}, scales:{y:{beginAtZero:true, grid:{borderDash:[4,4]}}, x:{grid:{display:false}}} }
+  });
+}
+
+// ============ VISTA CRUCES ============
+function renderCruces(){
+  // Matriz de impacto vs sentimiento (bubble)
+  const byMedio = {};
+  filteredData.forEach(r=>{
+    const medio = getCol(r,'NOMBRE DEL MEDIO') || getCol(r,'TIPO DE MEDIO') || 'Otros';
+    const s = determineSentiment(getCol(r,'CRITERIO'));
+    const ave = parseCurrency(getCol(r,'SOLES'));
+    if(!byMedio[medio]) byMedio[medio] = {sum:0, count:0, sentSum:0};
+    byMedio[medio].sum += ave; byMedio[medio].count += 1; byMedio[medio].sentSum += sentScore(s);
+  });
+  const bubbleData = Object.entries(byMedio).map(([medio,v])=>({
+    x: v.sum/Math.max(v.count,1), y: v.sentSum/v.count, r: Math.min(6+v.count*1.5, 30), label: medio, count: v.count
+  }));
+  charts.matriz = new Chart(document.getElementById('c-matriz'), {
+    type:'bubble',
+    data:{ datasets:[{ data:bubbleData, backgroundColor:bubbleData.map(d=> d.y>0.15?colors.pos+'aa': d.y<-0.15?colors.neg+'aa':colors.neu+'aa') }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ tooltip:{...tooltipConfig, callbacks:{label:(ctx)=> `${ctx.raw.label} · ${ctx.raw.count} menciones · sentimiento ${ctx.raw.y.toFixed(2)}`}}, datalabels:{display:false}, legend:{display:false} },
+      scales:{ x:{title:{display:true,text:'Alcance estimado (AVE promedio, S/)'}}, y:{min:-1.2,max:1.2, title:{display:true,text:'Sentimiento promedio'}} } }
+  });
+
+  function buildStack(colName){
+    const cats=[...new Set(filteredData.map(r=>getCol(r,colName)).filter(Boolean))];
+    const p=[],nu=[],ne=[];
+    cats.forEach(c=>{
+      const rows=filteredData.filter(r=>getCol(r,colName)===c);
+      const tot=rows.length||1;
+      p.push(100*rows.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Positiva').length/tot);
+      nu.push(100*rows.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Neutro').length/tot);
+      ne.push(100*rows.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Negativa').length/tot);
     });
+    return {labels:cats, p, nu, ne};
   }
+  const stMedio = buildStack('TIPO DE MEDIO');
+  charts.stackMedio = new Chart(document.getElementById('c-stack-medio'), {
+    type:'bar',
+    data:{ labels:stMedio.labels, datasets:[
+      {label:'Positivo', data:stMedio.p, backgroundColor:colors.pos},
+      {label:'Neutro', data:stMedio.nu, backgroundColor:colors.neu},
+      {label:'Negativo', data:stMedio.ne, backgroundColor:colors.neg}
+    ]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, scales:{x:{stacked:true,max:100,ticks:{callback:v=>v+'%'}}, y:{stacked:true, grid:{display:false}}}, plugins:{tooltip:{...tooltipConfig, callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`}}, legend:{position:'bottom'}, datalabels:{display:false}} }
+  });
 
-  // Carga de respaldo en caso de bloqueo por política de origen
-  function cargarConProxy() {
-    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(GOOGLE_CSV_URL);
-    Papa.parse(proxyUrl, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        if (results.data && results.data.length > 0) {
-          setStatus(`Exitoso (Vía Proxy): Se cargaron ${results.data.length} filas.`, 'success');
-          renderDashboard(results.data);
-        } else {
-          setStatus('Error: No se pudo leer el archivo CSV desde la fuente.', 'error');
-        }
-      },
-      error: function(err) {
-        setStatus('Error crítico: Comprueba la URL de publicación de tu Google Sheet.', 'error');
-      }
+  const stTema = buildStack('TEMA');
+  charts.stackTema = new Chart(document.getElementById('c-stack-tema'), {
+    type:'bar',
+    data:{ labels:stTema.labels.slice(0,10), datasets:[
+      {label:'Positivo', data:stTema.p.slice(0,10), backgroundColor:colors.pos},
+      {label:'Neutro', data:stTema.nu.slice(0,10), backgroundColor:colors.neu},
+      {label:'Negativo', data:stTema.ne.slice(0,10), backgroundColor:colors.neg}
+    ]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, scales:{x:{stacked:true,max:100,ticks:{callback:v=>v+'%'}}, y:{stacked:true, grid:{display:false}}}, plugins:{tooltip:{...tooltipConfig, callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`}}, legend:{position:'bottom'}, datalabels:{display:false}} }
+  });
+
+  // Evolución sentimiento vocero vs entidad (promedio diario)
+  const isEntity = r => (getCol(r,'QUIÉN')||'').toUpperCase().includes(ENTITY_KEYWORD);
+  const isVocero = r => (getCol(r,'QUIÉN')||'').toUpperCase().includes(VOCERO_KEYWORD);
+  const dayKeys = [...new Set(filteredData.map(r=>getCol(r,'FECHA')).filter(Boolean))].sort((a,b)=>parseDate(a)-parseDate(b));
+  const entLine = dayKeys.map(d=>{ const rows=filteredData.filter(r=>getCol(r,'FECHA')===d && isEntity(r)); return rows.length? rows.reduce((s,r)=>s+sentScore(determineSentiment(getCol(r,'CRITERIO'))),0)/rows.length : null; });
+  const vocLine = dayKeys.map(d=>{ const rows=filteredData.filter(r=>getCol(r,'FECHA')===d && isVocero(r)); return rows.length? rows.reduce((s,r)=>s+sentScore(determineSentiment(getCol(r,'CRITERIO'))),0)/rows.length : null; });
+  charts.actorSent = new Chart(document.getElementById('c-actor-sent'), {
+    type:'line',
+    data:{ labels:dayKeys.map(formatFriendlyDate), datasets:[
+      {label:'Entidad', data:entLine, borderColor:colors.main, backgroundColor:colors.main, tension:.4, borderWidth:2.5, spanGaps:true, pointRadius:2},
+      {label:'Vocero', data:vocLine, borderColor:colors.sky, backgroundColor:colors.sky, tension:.4, borderWidth:2.5, spanGaps:true, pointRadius:2}
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, legend:{position:'bottom'}, datalabels:{display:false}}, scales:{y:{min:-1,max:1}, x:{grid:{display:false}}} }
+  });
+}
+
+// ============ VISTA CUALITATIVO ============
+function renderCualitativo(){
+  const medTotal = groupData(filteredData,'NOMBRE DEL MEDIO').slice(0,8);
+  document.getElementById('rk-top').innerHTML = medTotal.map(([n,v])=>`<li><span class="rk-name">${n}</span><span class="rk-val">${v}</span></li>`).join('') || '<li>Sin datos</li>';
+
+  const negRows = filteredData.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Negativa');
+  const medNeg = groupData(negRows,'NOMBRE DEL MEDIO').slice(0,8);
+  document.getElementById('rk-neg').innerHTML = medNeg.map(([n,v])=>`<li><span class="rk-name">${n}</span><span class="rk-val neg">${v}</span></li>`).join('') || '<li>Sin notas críticas</li>';
+
+  const hitosCol = hasCol(filteredData,'HITO') ? 'HITO' : 'TEMA';
+  const hitos = groupData(filteredData, hitosCol).slice(0,8);
+  document.getElementById('rk-hitos').innerHTML = hitos.map(([n,v])=>`<li><span class="rk-name">${n}</span><span class="rk-val">${v}</span></li>`).join('') || '<li>Sin datos</li>';
+
+  // Nube de palabras
+  const titularCol = ['TITULAR','BANNER','TÍTULO'].find(c=>hasCol(filteredData,c));
+  const freq = {};
+  if(titularCol){
+    const stop = new Set(['de','la','el','en','y','a','los','las','del','por','con','para','un','una','se','que','al','su','sus']);
+    filteredData.forEach(r=>{
+      const t = (getCol(r,titularCol)||'').toString().toLowerCase().replace(/[^a-záéíóúñ\s]/g,'');
+      t.split(/\s+/).forEach(w=>{ if(w.length>3 && !stop.has(w)) freq[w]=(freq[w]||0)+1; });
     });
+  } else {
+    ['TEMA','QUIÉN','ORIGEN'].forEach(col=>{ groupData(filteredData,col).forEach(([w,c])=>{ freq[w]=(freq[w]||0)+c; }); });
   }
+  const top = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,35);
+  const maxF = top.length? top[0][1] : 1;
+  const wcEl = document.getElementById('wordcloud');
+  wcEl.innerHTML = top.map(([w,c])=>{
+    const size = 13 + (c/maxF)*38;
+    const op = 0.55 + (c/maxF)*0.45;
+    return `<span style="font-size:${size}px;opacity:${op}">${w}</span>`;
+  }).join('') || '<span style="opacity:.5;font-size:14px">Sin datos suficientes para generar la nube</span>';
+}
 
-  function renderDashboard(data) {
-    // 1. Columnas detectadas
-    const headers = Object.keys(data[0]);
-    document.getElementById('table-head').innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
-    
-    // 2. Filas de muestra
-    document.getElementById('table-body').innerHTML = data.slice(0, 5).map(row => {
-      return '<tr>' + headers.map(h => `<td>${row[h] || ''}</td>`).join('') + '</tr>';
-    }).join('');
+// ============ VISTA AVANZADO ============
+function renderAvanzado(){
+  // Insight automático (heurístico, basado en los datos, sin llamadas externas)
+  const total = filteredData.length;
+  const neg = filteredData.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Negativa');
+  const topNegMedio = groupData(neg,'NOMBRE DEL MEDIO')[0];
+  const topTema = groupData(filteredData,'TEMA')[0];
+  const dayObj={}; filteredData.forEach(r=>{ const f=getCol(r,'FECHA'); if(f) dayObj[f]=(dayObj[f]||0)+1; });
+  const peakDay = Object.entries(dayObj).sort((a,b)=>b[1]-a[1])[0];
+  let insight = `Este mes se registraron <b>${total}</b> menciones. `;
+  if(peakDay) insight += `El pico informativo fue el <b>${formatFriendlyDate(peakDay[0])}</b>, con ${peakDay[1]} menciones. `;
+  if(topTema) insight += `La temática dominante fue <b>${topTema[0]}</b> (${topTema[1]} menciones). `;
+  if(topNegMedio) insight += `El medio con más notas críticas fue <b>${topNegMedio[0]}</b> (${topNegMedio[1]} notas negativas). `;
+  insight += `Esta interpretación se genera con reglas simples sobre los datos filtrados; revísala antes de citarla en el informe oficial.`;
+  document.getElementById('insight-auto').innerHTML = '<i class="ph ph-sparkle"></i> ' + insight;
 
-    // 3. Métricas Básicas
-    document.getElementById('kpi-menciones').innerText = data.length;
-
-    // 4. Renderizado de Gráficos básicos
-    const ctx1 = document.getElementById('chartEvolucion').getContext('2d');
-    new Chart(ctx1, {
-      type: 'line',
-      data: {
-        labels: data.slice(0, 7).map((_, i) => `Día ${i+1}`),
-        datasets: [{ label: 'Menciones', data: data.slice(0, 7).map(() => Math.floor(Math.random() * 20) + 5), borderColor: '#2563eb' }]
+  // Detección de anomalías: comparar negativas diarias vs media móvil 7 días (sobre todo el año, no solo el mes)
+  const allDays = [...new Set(rawData.map(r=>getCol(r,'FECHA')).filter(Boolean))].sort((a,b)=>parseDate(a)-parseDate(b));
+  const negByDay = {}; rawData.forEach(r=>{ if(determineSentiment(getCol(r,'CRITERIO'))==='Negativa'){ const f=getCol(r,'FECHA'); if(f) negByDay[f]=(negByDay[f]||0)+1; } });
+  const anomalies = [];
+  allDays.forEach((d,i)=>{
+    if(i<7) return;
+    const window7 = allDays.slice(i-7,i).map(x=>negByDay[x]||0);
+    const avg = window7.reduce((a,b)=>a+b,0)/7;
+    const val = negByDay[d]||0;
+    if(avg>0 && val > avg*1.5 && val>=2){
+      const dParsed = parseDate(d);
+      if(dParsed.getMonth() === parseInt(document.getElementById('month-select').value)){
+        anomalies.push({date:d, val, avg});
       }
-    });
+    }
+  });
+  document.getElementById('anomaly-list').innerHTML = anomalies.length
+    ? anomalies.map(a=>`<div class="alert-item"><i class="ph-fill ph-warning-circle"></i><div><b>${formatFriendlyDate(a.date)}</b>: ${a.val} menciones negativas (promedio previo: ${a.avg.toFixed(1)}) — posible pico de crisis.</div></div>`).join('')
+    : '<div style="color:var(--text-muted);font-size:13px;padding:10px 0">No se detectaron anomalías significativas este mes.</div>';
 
-    const ctx2 = document.getElementById('chartMedios').getContext('2d');
-    new Chart(ctx2, {
-      type: 'doughnut',
-      data: {
-        labels: ['Digital', 'Prensa', 'TV', 'Radio'],
-        datasets: [{ data: [40, 25, 20, 15], backgroundColor: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'] }]
-      }
-    });
+  // Forecast simple: regresión lineal sobre menciones mensuales de los últimos 6 meses con datos
+  const monthCount = new Array(12).fill(0);
+  rawData.forEach(r=>{ const d=parseDate(getCol(r,'FECHA')); if(d) monthCount[d.getMonth()]++; });
+  const withData = monthCount.map((v,i)=>({i,v})).filter(x=>x.v>0);
+  const last6 = withData.slice(-6);
+  let forecastVal = null;
+  if(last6.length>=2){
+    const n=last6.length, sumX=last6.reduce((s,p)=>s+p.i,0), sumY=last6.reduce((s,p)=>s+p.v,0);
+    const sumXY=last6.reduce((s,p)=>s+p.i*p.v,0), sumX2=last6.reduce((s,p)=>s+p.i*p.i,0);
+    const slope=(n*sumXY-sumX*sumY)/(n*sumX2-sumX*sumX || 1);
+    const intercept=(sumY-slope*sumX)/n;
+    const nextI = last6[last6.length-1].i+1;
+    forecastVal = Math.max(0, Math.round(slope*nextI+intercept));
   }
+  const labels = monthNames.map(m=>m.toUpperCase());
+  const lastIdx = withData.length? withData[withData.length-1].i : null;
+  const forecastLabels = lastIdx!==null && lastIdx<11 ? [...labels] : [...labels,'PROY.'];
+  const actualSeries = monthCount.map(v=>v||null);
+  const forecastSeries = new Array(actualSeries.length).fill(null);
+  if(forecastVal!==null && lastIdx!==null){
+    if(lastIdx<11){ forecastSeries[lastIdx]=monthCount[lastIdx]; forecastSeries[lastIdx+1]=forecastVal; }
+  }
+  charts.forecast = new Chart(document.getElementById('c-forecast'), {
+    type:'line',
+    data:{ labels:forecastLabels, datasets:[
+      {label:'Real', data:actualSeries, borderColor:colors.main, backgroundColor:colors.main, borderWidth:3, tension:.3, spanGaps:true, pointRadius:3},
+      {label:'Proyección', data:forecastSeries, borderColor:colors.neu, borderDash:[6,4], borderWidth:3, tension:.3, spanGaps:true, pointRadius:3}
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, legend:{position:'bottom'}, datalabels:{display:false}}, scales:{y:{beginAtZero:true, grid:{borderDash:[4,4]}}, x:{grid:{display:false}}} }
+  });
 
-  window.onload = cargarDatos;
+  // Heatmap día de semana x hora (si no hay HORA, se rellena la fila y se avisa)
+  const horaCol = ['HORA','HORA DE PUBLICACIÓN'].find(c=>hasCol(rawData,c));
+  document.getElementById('heatmap-note').innerText = horaCol
+    ? 'Intensidad de notas críticas por día de la semana y hora de publicación.'
+    : 'No se encontró columna de HORA en el CSV — se muestra solo la distribución por día de la semana (columna única).';
+  const grid = {}; dayNames.forEach(d=>{ grid[d] = new Array(horaCol?24:1).fill(0); });
+  let maxCell = 1;
+  filteredData.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Negativa').forEach(r=>{
+    const d = parseDate(getCol(r,'FECHA')); if(!d) return;
+    const dayName = dayNames[d.getDay()];
+    let hourIdx = 0;
+    if(horaCol){ const hv = (getCol(r,horaCol)||'').toString(); const hh = parseInt(hv.split(':')[0]); hourIdx = isNaN(hh)?0:Math.min(Math.max(hh,0),23); }
+    grid[dayName][hourIdx]++;
+    if(grid[dayName][hourIdx]>maxCell) maxCell = grid[dayName][hourIdx];
+  });
+  const hmEl = document.getElementById('heatmap');
+  let hmHtml = '';
+  const cols = horaCol?24:1;
+  hmHtml += '<div></div>';
+  for(let h=0;h<cols;h++) hmHtml += `<div class="hlabel" style="justify-content:center">${horaCol? h+'h':'Total'}</div>`;
+  dayNames.forEach(dn=>{
+    hmHtml += `<div class="hlabel">${dn}</div>`;
+    for(let h=0;h<cols;h++){
+      const val = grid[dn][h]||0;
+      const intensity = val/maxCell;
+      const bg = intensity===0 ? '#f1f5f9' : `rgba(239,68,68,${0.15+intensity*0.75})`;
+      hmHtml += `<div class="hcell" style="background:${bg}" title="${dn} ${horaCol?h+'h':''}: ${val} notas críticas"></div>`;
+    }
+  });
+  hmEl.style.gridTemplateColumns = `70px repeat(${cols},1fr)`;
+  hmEl.innerHTML = hmHtml;
+}
 </script>
-
 </body>
 </html>
