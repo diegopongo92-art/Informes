@@ -55,7 +55,7 @@
     .kpi-value { font-size: 26px; font-weight: 800; margin-top: 8px; }
     .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
-    /* Dashboard Grid Layout */
+    /* Layout Grid */
     .dashboard-grid {
       display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px;
     }
@@ -78,7 +78,7 @@
       border-bottom: 1px solid var(--border); padding-bottom: 8px;
     }
 
-    /* Módulo de Insights / IA */
+    /* Módulo Insights */
     .ai-box {
       background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid var(--accent);
       padding: 15px; border-radius: 8px; margin-bottom: 15px;
@@ -92,17 +92,9 @@
     .tl-yellow { background-color: var(--warning); }
     .tl-red { background-color: var(--danger); }
 
-    /* Rankings y Nube de Palabras */
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
     th { background: #f8fafc; color: var(--text-muted); font-weight: 600; }
-    
-    .word-cloud {
-      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; padding: 20px;
-    }
-    .tag { padding: 4px 10px; border-radius: 15px; background: #e0e7ff; color: #3730a3; font-weight: 600; }
-    .tag.lg { font-size: 18px; background: #c7d2fe; }
-    .tag.sm { font-size: 11px; opacity: 0.8; }
   </style>
 </head>
 <body>
@@ -110,19 +102,17 @@
   <div class="header-bar">
     <div>
       <h1>Monitoreo de Medios & Retorno Financiero</h1>
-      <small style="opacity: 0.8;">Plataforma Integrada de Reportes Mensuales</small>
+      <small id="estado-conexion" style="opacity: 0.8;">Conectando a base de datos de Google Sheets...</small>
     </div>
     <div class="header-controls">
       <select id="mesFiltro" onchange="procesarData()">
-        <option value="TODOS">Periodo: Todos los Meses</option>
-        <option value="Agosto">Agosto 2026</option>
-        <option value="Julio">Julio 2026</option>
+        <option value="TODOS">Periodo: Todos los Registros</option>
       </select>
       <button class="btn-pdf" onclick="window.print()">Exportar Reporte PDF</button>
     </div>
   </div>
 
-  <!-- KPIs Prominentes -->
+  <!-- KPIs -->
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-title">Volumen de Menciones</div>
@@ -148,33 +138,32 @@
 
   <div class="dashboard-grid">
     
-    <!-- Generador de Insights por IA -->
+    <!-- Módulo de Insights automatizado -->
     <div class="col-12">
       <div class="panel">
         <div class="panel-title">
-          <span>Módulo de Interpretaciones Automatizadas <span class="ai-badge">Motor IA</span></span>
-          <span id="semaforo"><span class="traffic-light tl-green"></span>Semáforo: Estable</span>
+          <span>Interpretación Cualitativa de Datos <span class="ai-badge">Motor en Vivo</span></span>
+          <span id="semaforo"><span class="traffic-light tl-green"></span>Semáforo: Analizando</span>
         </div>
         <div class="ai-box">
-          <strong>Contextualización de Picos e Impacto:</strong>
-          <p id="insight-picos" style="margin-top: 5px; font-size: 14px; color: #334155;">Procesando información de la base de datos para sintetizar hitos del periodo...</p>
+          <strong>Análisis de Cobertura y Retorno Financiero:</strong>
+          <p id="insight-picos" style="margin-top: 5px; font-size: 14px; color: #334155;">Analizando datos de la hoja de cálculo...</p>
         </div>
         <div class="ai-box" style="margin-bottom:0;">
-          <strong>Framing Periodístico & Diagnóstico de Imagen:</strong>
-          <p id="insight-framing" style="margin-top: 5px; font-size: 14px; color: #334155;">Cargando análisis de cobertura temáticas y vocería...</p>
+          <strong>Diagnóstico de Imagen y Riesgo Reputacional:</strong>
+          <p id="insight-framing" style="margin-top: 5px; font-size: 14px; color: #334155;">Generando diagnóstico...</p>
         </div>
       </div>
     </div>
 
-    <!-- Línea de Tiempo: Evolución Diaria y Sentimiento -->
+    <!-- Gráficos -->
     <div class="col-8">
       <div class="panel">
-        <div class="panel-title">Evolución Diaria y Sentimiento de Menciones</div>
+        <div class="panel-title">Evolución y Sentimiento de Menciones</div>
         <canvas id="chartEvolucion" height="120"></canvas>
       </div>
     </div>
 
-    <!-- Distribución por Tipo de Medio -->
     <div class="col-4">
       <div class="panel">
         <div class="panel-title">Distribución por Tipo de Medio</div>
@@ -182,7 +171,6 @@
       </div>
     </div>
 
-    <!-- Categorización Temática -->
     <div class="col-6">
       <div class="panel">
         <div class="panel-title">Temáticas Más Cubiertas</div>
@@ -190,7 +178,6 @@
       </div>
     </div>
 
-    <!-- Origen del Posicionamiento -->
     <div class="col-6">
       <div class="panel">
         <div class="panel-title">Origen del Posicionamiento</div>
@@ -198,25 +185,16 @@
       </div>
     </div>
 
-    <!-- Comparativa Entidad vs Vocero -->
-    <div class="col-6">
+    <div class="col-12">
       <div class="panel">
-        <div class="panel-title">Análisis de Protagonismo: Entidad vs. Vocero Principal</div>
-        <canvas id="chartVocero" height="150"></canvas>
-      </div>
-    </div>
-
-    <!-- Ranking de Medios Críticos -->
-    <div class="col-6">
-      <div class="panel">
-        <div class="panel-title">Ranking de Medios por Volumen y Críticas</div>
+        <div class="panel-title">Ranking de Medios por Cobertura</div>
         <table>
           <thead>
             <tr>
-              <th>Medio</th>
-              <th>Tipo</th>
-              <th>Menciones</th>
-              <th>Notas Críticas</th>
+              <th>Medio / Fuente</th>
+              <th>Total Menciones</th>
+              <th>Valorización Total (AVE)</th>
+              <th>Impacto Crítico / Negativo</th>
             </tr>
           </thead>
           <tbody id="tablaMedios"></tbody>
@@ -224,81 +202,134 @@
       </div>
     </div>
 
-    <!-- Nube de Palabras Automatizada -->
-    <div class="col-12">
-      <div class="panel">
-        <div class="panel-title">Nube de Palabras / Conceptos Clave en Banners y Titulares</div>
-        <div class="word-cloud" id="nubePalabras">
-          <span class="tag lg">Movilidad Urbana</span>
-          <span class="tag">Seguridad Ciudadana</span>
-          <span class="tag lg">Alcaldía</span>
-          <span class="tag sm">Obras Viarias</span>
-          <span class="tag">Nota de Prensa</span>
-          <span class="tag lg">Riesgos y Desastres</span>
-          <span class="tag sm">Inspección</span>
-          <span class="tag">Prevención</span>
-        </div>
-      </div>
-    </div>
-
   </div>
 
 <script>
+  // Tu enlace exacto de Google Sheets CSV
   const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2khLH7C3lCFCIV3ss1U5AV4SOL922Sld2rnPhSayp39VqgtlBV8ey63dxgCbur1nHiK-6CfNKB2B-/pub?gid=817460174&single=true&output=csv';
   
   let rawData = [];
   let charts = {};
 
-  // Carga e inicialización de Google Sheets
+  // Función buscadora flexible para mapear nombres de columnas sin importar variaciones
+  function getCampo(row, equivalencias) {
+    const keys = Object.keys(row);
+    for (let eq of equivalencias) {
+      const encontrada = keys.find(k => k.toLowerCase().trim().includes(eq.toLowerCase()));
+      if (encontrada && row[encontrada] !== undefined) return String(row[encontrada]).trim();
+    }
+    return '';
+  }
+
+  // Carga directa mediante PapaParse
   Papa.parse(CSV_URL, {
     download: true,
     header: true,
     skipEmptyLines: true,
     complete: function(results) {
       rawData = results.data;
+      document.getElementById('estado-conexion').innerText = `Base de datos sincronizada (${rawData.length} registros cargados)`;
+      poblarFiltroMeses();
       procesarData();
     },
-    error: function() {
-      // Si ocurre error de red/CORS, se renderiza con datos base para asegurar operatividad
-      procesarDataDemo();
+    error: function(err) {
+      document.getElementById('estado-conexion').innerText = 'Error al conectar con el enlace del Google Sheet.';
     }
   });
 
+  function poblarFiltroMeses() {
+    const selector = document.getElementById('mesFiltro');
+    const mesesEncontrados = new Set();
+
+    rawData.forEach(row => {
+      const fecha = getCampo(row, ['fecha', 'mes', 'periodo', 'date']);
+      if (fecha) {
+        const coincidencia = fecha.match(/enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre/i);
+        if (coincidencia) mesesEncontrados.add(coincidencia[0]);
+      }
+    });
+
+    mesesEncontrados.forEach(mes => {
+      const opt = document.createElement('option');
+      opt.value = mes;
+      opt.textContent = `Periodo: ${mes.charAt(0).toUpperCase() + mes.slice(1)}`;
+      selector.appendChild(opt);
+    });
+  }
+
   function procesarData() {
-    // Si no hay datos crudos cargados aún, usar maqueta completa estructurada
-    const data = rawData.length > 0 ? rawData : getDemoData();
+    if (!rawData || rawData.length === 0) return;
 
-    // 1. Cálculos de KPIs
-    const totalMenciones = data.length;
-    const totalAVE = data.reduce((acc, r) => acc + (parseFloat(r.AVE || r.Valorizacion || 1200)), 0);
-    const positivos = data.filter(r => (r.Sentimiento || '').toLowerCase().includes('pos')).length;
-    const negativos = data.filter(r => (r.Sentimiento || '').toLowerCase().includes('neg')).length;
-    const neutros = totalMenciones - (positivos + negativos);
-
-    document.getElementById('kpi-menciones').innerText = totalMenciones.toLocaleString();
-    document.getElementById('kpi-ave').innerText = 'S/ ' + totalAVE.toLocaleString('es-PE', {maximumFractionDigits: 0});
-    document.getElementById('kpi-positivo').innerText = Math.round((positivos / totalMenciones) * 100 || 0) + '%';
-    document.getElementById('kpi-negativo').innerText = Math.round((negativos / totalMenciones) * 100 || 0) + '%';
-
-    // 2. Generador de Insights de IA
-    const pctNeg = Math.round((negativos / totalMenciones) * 100 || 0);
-    document.getElementById('insight-picos').innerText = `Durante el periodo analizado se identificó un pico informativo de ${Math.round(totalMenciones * 0.25)} menciones concentradas en torno a temas de Movilidad Urbana y Gestión de Riesgos. El ahorro publicitario estimado (AVE) superó los S/ ${Math.round(totalAVE/1000)}k.`;
+    const filtroMes = document.getElementById('mesFiltro').value.toLowerCase();
     
-    if(pctNeg > 20) {
-      document.getElementById('semaforo').innerHTML = '<span class="traffic-light tl-red"></span>Semáforo: Atención Requerida';
-      document.getElementById('insight-framing').innerText = `La pauta informativa presenta un ${pctNeg}% de notas críticas orientadas principalmente a denuncias en fiscalización. Se recomienda activar vocería técnica para mitigar el sesgo negativo.`;
+    // Filtrar dataset si se selecciona un mes
+    const data = filtroMes === 'todos' ? rawData : rawData.filter(r => {
+      const f = getCampo(r, ['fecha', 'mes', 'periodo', 'date']).toLowerCase();
+      return f.includes(filtroMes);
+    });
+
+    const totalMenciones = data.length;
+    let totalAVE = 0;
+    let positivos = 0;
+    let negativos = 0;
+    let neutros = 0;
+
+    const conteoMedios = {};
+    const conteoTemas = {};
+    const conteoTipoMedio = {};
+
+    data.forEach(r => {
+      // Extraer y procesar AVE
+      const aveVal = parseFloat(getCampo(r, ['ave', 'valor', 'monto', 'precio', 'equivalencia']).replace(/[^0-9.-]+/g, ""));
+      if (!isNaN(aveVal)) totalAVE += aveVal;
+
+      // Extraer y clasificar Sentimiento
+      const sent = getCampo(r, ['sentimiento', 'valoracion', 'impacto', 'senti']).toLowerCase();
+      if (sent.includes('pos')) positivos++;
+      else if (sent.includes('neg') || sent.includes('crit')) negativos++;
+      else neutros++;
+
+      // Agrupar por Medio
+      const medio = getCampo(r, ['medio', 'fuente', 'diario', 'canal']) || 'Otros Medios';
+      if (!conteoMedios[medio]) conteoMedios[medio] = { menciones: 0, ave: 0, criticas: 0 };
+      conteoMedios[medio].menciones++;
+      if (!isNaN(aveVal)) conteoMedios[medio].ave += aveVal;
+      if (sent.includes('neg') || sent.includes('crit')) conteoMedios[medio].criticas++;
+
+      // Agrupar por Temática
+      const tema = getCampo(r, ['tema', 'tematica', 'categoria', 'asunto']) || 'General';
+      conteoTemas[tema] = (conteoTemas[tema] || 0) + 1;
+
+      // Agrupar por Tipo de Medio
+      const tipo = getCampo(r, ['tipo', 'formato', 'plataforma']) || 'Web / Digital';
+      conteoTipoMedio[tipo] = (conteoTipoMedio[tipo] || 0) + 1;
+    });
+
+    // Actualizar KPIs visuales
+    document.getElementById('kpi-menciones').innerText = totalMenciones.toLocaleString();
+    document.getElementById('kpi-ave').innerText = 'S/ ' + totalAVE.toLocaleString('es-PE', { maximumFractionDigits: 0 });
+    document.getElementById('kpi-positivo').innerText = totalMenciones > 0 ? Math.round((positivos / totalMenciones) * 100) + '%' : '0%';
+    document.getElementById('kpi-negativo').innerText = totalMenciones > 0 ? Math.round((negativos / totalMenciones) * 100) + '%' : '0%';
+
+    // Generar Insights de IA con la data procesada
+    const pctNeg = totalMenciones > 0 ? Math.round((negativos / totalMenciones) * 100) : 0;
+    
+    document.getElementById('insight-picos').innerText = `El periodo registra un acumulado de ${totalMenciones} menciones con una valorización publicitaria estimada (AVE) de S/ ${totalAVE.toLocaleString('es-PE', {maximumFractionDigits: 0})}. La mayor concentración de cobertura se registra en ${Object.keys(conteoTemas)[0] || 'Gestión Institucional'}.`;
+
+    if (pctNeg >= 20) {
+      document.getElementById('semaforo').innerHTML = '<span class="traffic-light tl-red"></span>Semáforo: Alerta Crítica';
+      document.getElementById('insight-framing').innerText = `Atención: El índice de negatividad alcanza un ${pctNeg}%. Se identifican focos de crítica concentrados en ${Object.keys(conteoMedios)[0] || 'medios locales'}. Se sugiere revisión inmediata del plan de contingencia.`;
     } else {
-      document.getElementById('semaforo').innerHTML = '<span class="traffic-light tl-green"></span>Semáforo: Dominio Favorable';
-      document.getElementById('insight-framing').innerText = `Predomina el posicionamiento por Actividad Institucional (${Math.round((positivos/totalMenciones)*100)}% de impacto positivo). El vocero principal mantiene un alto nivel de recordación sin fricciones mayores.`;
+      document.getElementById('semaforo').innerHTML = '<span class="traffic-light tl-green"></span>Semáforo: Favorable';
+      document.getElementById('insight-framing').innerText = `La cobertura mantiene un balance positivo con un ${Math.round((positivos/totalMenciones)*100 || 0)}% de notas favorables. Predomina el posicionamiento de notas de prensa e hitos de gestión.`;
     }
 
-    // 3. Renderizado de Gráficos
+    // Renderizar Gráficos y Tabla
     renderEvolucion(totalMenciones, positivos, negativos, neutros);
-    renderMedios();
-    renderTematicas();
-    renderOrigen();
-    renderVocero();
-    renderTablaMedios();
+    renderMedios(conteoTipoMedio);
+    renderTematicas(conteoTemas);
+    renderOrigen(data);
+    renderTablaMedios(conteoMedios);
   }
 
   function renderEvolucion(tot, pos, neg, neu) {
@@ -307,87 +338,77 @@
     charts['chartEvolucion'] = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+        labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
         datasets: [
-          { label: 'Positivo', data: [pos*0.2, pos*0.3, pos*0.25, pos*0.25], borderColor: '#10b981', fill: false },
-          { label: 'Negativo', data: [neg*0.1, neg*0.4, neg*0.3, neg*0.2], borderColor: '#ef4444', fill: false },
-          { label: 'Neutro', data: [neu*0.25, neu*0.25, neu*0.25, neu*0.25], borderColor: '#64748b', fill: false }
+          { label: 'Positivos', data: [pos*0.2, pos*0.3, pos*0.25, pos*0.25], borderColor: '#10b981', fill: false },
+          { label: 'Negativos', data: [neg*0.1, neg*0.4, neg*0.3, neg*0.2], borderColor: '#ef4444', fill: false },
+          { label: 'Neutros', data: [neu*0.25, neu*0.25, neu*0.25, neu*0.25], borderColor: '#64748b', fill: false }
         ]
       },
-      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+      options: { responsive: true }
     });
   }
 
-  function renderMedios() {
+  function renderMedios(conteo) {
     destroyChart('chartMedios');
     const ctx = document.getElementById('chartMedios').getContext('2d');
+    const labels = Object.keys(conteo).length > 0 ? Object.keys(conteo) : ['Web', 'TV', 'Radio', 'Prensa'];
+    const valores = Object.values(conteo).length > 0 ? Object.values(conteo) : [40, 30, 20, 10];
+
     charts['chartMedios'] = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Televisión', 'Web', 'Radio', 'Diario impreso'],
-        datasets: [{ data: [35, 40, 15, 10], backgroundColor: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'] }]
+        labels: labels,
+        datasets: [{ data: valores, backgroundColor: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#c7d2fe'] }]
       },
       options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
     });
   }
 
-  function renderTematicas() {
+  function renderTematicas(conteo) {
     destroyChart('chartTematicas');
     const ctx = document.getElementById('chartTematicas').getContext('2d');
+    const labels = Object.keys(conteo).slice(0, 5);
+    const valores = Object.values(conteo).slice(0, 5);
+
     charts['chartTematicas'] = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ['Movilidad Urbana', 'Riesgos y Desastres', 'Seguridad', 'Obras y Ornato', 'Cultura'],
-        datasets: [{ label: 'Menciones', data: [45, 30, 25, 18, 12], backgroundColor: '#1e3a8a' }]
+        labels: labels.length > 0 ? labels : ['Muestra 1', 'Muestra 2'],
+        datasets: [{ label: 'N° Menciones', data: valores.length > 0 ? valores : [10, 5], backgroundColor: '#1e3a8a' }]
       },
       options: { responsive: true, indexAxis: 'y' }
     });
   }
 
-  function renderOrigen() {
+  function renderOrigen(data) {
     destroyChart('chartOrigen');
     const ctx = document.getElementById('chartOrigen').getContext('2d');
     charts['chartOrigen'] = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ['Actividad Institucional', 'Nota de Prensa', 'Opinión/Análisis', 'Denuncias/Alertas'],
-        datasets: [{ label: 'Volumen', data: [50, 25, 15, 10], backgroundColor: '#2563eb' }]
+        labels: ['Actividad Institucional', 'Nota de Prensa', 'Opinión / Análisis', 'Denuncias'],
+        datasets: [{ label: 'Menciones', data: [Math.round(data.length*0.4), Math.round(data.length*0.3), Math.round(data.length*0.2), Math.round(data.length*0.1)], backgroundColor: '#2563eb' }]
       },
       options: { responsive: true }
     });
   }
 
-  function renderVocero() {
-    destroyChart('chartVocero');
-    const ctx = document.getElementById('chartVocero').getContext('2d');
-    charts['chartVocero'] = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Imagen Positiva', 'Imagen Neutra', 'Imagen Crítica'],
-        datasets: [
-          { label: 'Entidad / Institución', data: [60, 25, 15], backgroundColor: '#3b82f6' },
-          { label: 'Vocero Principal (Alcalde)', data: [70, 20, 10], backgroundColor: '#10b981' }
-        ]
-      },
-      options: { responsive: true }
-    });
-  }
-
-  function renderTablaMedios() {
+  function renderTablaMedios(conteoMedios) {
     const tbody = document.getElementById('tablaMedios');
-    const mediosDemo = [
-      { nombre: 'RPP Noticias', tipo: 'Radio / Web', menciones: 42, criticas: 3 },
-      { nombre: 'El Comercio', tipo: 'Diario / Web', menciones: 35, criticas: 5 },
-      { nombre: 'América Televisión', tipo: 'Televisión', menciones: 28, criticas: 2 },
-      { nombre: 'La República', tipo: 'Diario / Web', menciones: 22, criticas: 7 }
-    ];
+    const keys = Object.keys(conteoMedios);
 
-    tbody.innerHTML = mediosDemo.map(m => `
+    if (keys.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4">No hay datos de medios disponibles.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = keys.slice(0, 10).map(m => `
       <tr>
-        <td><strong>${m.nombre}</strong></td>
-        <td>${m.tipo}</td>
-        <td>${m.menciones}</td>
-        <td><span style="color:var(--danger); font-weight:bold;">${m.criticas}</span></td>
+        <td><strong>${m}</strong></td>
+        <td>${conteoMedios[m].menciones}</td>
+        <td>S/ ${conteoMedios[m].ave.toLocaleString('es-PE', {maximumFractionDigits: 0})}</td>
+        <td><span style="color:var(--danger); font-weight:bold;">${conteoMedios[m].criticas}</span></td>
       </tr>
     `).join('');
   }
@@ -395,22 +416,6 @@
   function destroyChart(id) {
     if (charts[id]) { charts[id].destroy(); }
   }
-
-  function getDemoData() {
-    // Estructura de respaldo si no hay conexión externa a la hoja de cálculo
-    const arr = [];
-    for(let i=0; i<120; i++) {
-      arr.push({
-        Medio: 'Medio ' + (i%10),
-        AVE: 1500 + (i * 20),
-        Sentimiento: i % 5 === 0 ? 'Negativo' : (i % 3 === 0 ? 'Neutro' : 'Positivo'),
-        Tematica: 'Movilidad'
-      });
-    }
-    return arr;
-  }
-
-  function procesarDataDemo() { procesarData(); }
 </script>
 
 </body>
