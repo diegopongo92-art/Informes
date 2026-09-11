@@ -273,8 +273,8 @@ Chart.defaults.font.size = 12;
 
 // ============ CONFIGURACIÓN ============
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2khLH7C3lCFCIV3ss1U5AV4SOL922Sld2rnPhSayp39VqgtlBV8ey63dxgCbur1nHiK-6CfNKB2B-/pub?output=csv';
-const ENTITY_KEYWORD = 'MUNICIPALIDAD'; // ajusta si tu columna QUIÉN usa otro nombre para la entidad
-const VOCERO_KEYWORD = 'ALCALDE';       // ajusta si tu columna QUIÉN usa otro nombre para el vocero
+const ENTITY_KEYWORD = 'MUNICIPALIDAD'; // coincide con "MUNICIPALIDAD DE LIMA" en tu columna ¿DE QUIÉN SE HABLA?
+const VOCERO_KEYWORD = 'REGGIARDO';     // coincide con "RENZO REGGIARDO" en tu columna ¿DE QUIÉN SE HABLA?
 const colors = { main:'#002f80', pos:'#10b981', neu:'#f59e0b', neg:'#ef4444', mainLight:'#2563eb', sky:'#60a5fa', teal:'#14b8a6' };
 const monthNames = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const dayNames = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -284,7 +284,11 @@ Papa.parse(CSV_URL, {
   download: true, header: true,
   complete: function(results){
     rawData = results.data.filter(r => Object.values(r).some(v => v && v.toString().trim() !== ''));
-    document.getElementById('month-select').value = new Date().getMonth();
+    // Por defecto abrimos en el último mes que realmente tiene datos, no en el mes real de hoy
+    // (si hoy es setiembre pero tu hoja solo tiene hasta agosto, evita que la vista abra "vacía")
+    const monthsWithRows = rawData.map(r=>{ const d=parseDate(getCol(r,'FECHA')); return d? d.getMonth() : null; }).filter(m=>m!==null);
+    const lastMonthWithData = monthsWithRows.length ? Math.max(...monthsWithRows) : new Date().getMonth();
+    document.getElementById('month-select').value = lastMonthWithData;
     applyFilter();
     document.getElementById('loading').style.opacity = '0';
     setTimeout(()=>document.getElementById('loading').style.display='none', 300);
