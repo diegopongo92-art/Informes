@@ -129,6 +129,7 @@ canvas{width:100% !important;height:100% !important;}
     <button class="nav-btn" onclick="switchView(event,'cruces')"><i class="ph ph-git-merge"></i> Cruces</button>
     <button class="nav-btn" onclick="switchView(event,'cualitativo')"><i class="ph ph-medal"></i> Cualitativo</button>
     <button class="nav-btn" onclick="switchView(event,'avanzado')"><i class="ph ph-brain"></i> Avanzado</button>
+    <button class="nav-btn" onclick="switchView(event,'reporte')"><i class="ph ph-file-text"></i> Reporte</button>
   </div>
   <div class="filters">
     <label style="color:var(--text-muted)"><i class="ph ph-calendar-blank"></i> Mes:</label>
@@ -243,6 +244,27 @@ canvas{width:100% !important;height:100% !important;}
   </div>
 </div>
 
+<!-- ===================== VISTA REPORTE ===================== -->
+<div id="view-reporte" class="view">
+  <div class="card" style="margin-bottom:16px">
+    <h3><i class="ph ph-file-text"></i> Informe ejecutivo automático</h3>
+    <p class="note" style="margin-bottom:10px">Texto generado por reglas a partir de los datos filtrados por mes. Es un borrador para revisar y ajustar, no reemplaza el criterio del equipo de comunicaciones.</p>
+    <div id="reporte-narrativo"></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card"><h3><i class="ph ph-broadcast"></i> Tipo de medio por mes (%)</h3><div class="chart-box tall"><canvas id="c-medio-pct"></canvas></div></div>
+    <div class="card"><h3><i class="ph ph-hash"></i> Temática por mes (%, Top 5)</h3><div class="chart-box tall"><canvas id="c-tema-pct"></canvas></div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><h3><i class="ph ph-map-pin"></i> Origen del posicionamiento por mes (%, Top 5)</h3><div class="chart-box tall"><canvas id="c-origen-pct"></canvas></div></div>
+    <div class="card"><h3><i class="ph ph-users-three"></i> Entidad vs. Vocero por mes (%)</h3><div class="chart-box tall"><canvas id="c-actor-pct"></canvas></div></div>
+  </div>
+  <div class="grid g12">
+    <div class="card span12"><h3><i class="ph ph-medal"></i> Ranking de medios por número de menciones (año)</h3><div class="chart-box"><canvas id="c-ranking-medios"></canvas></div></div>
+  </div>
+</div>
+
 <script>
 Chart.register(ChartDataLabels, Chart.Annotation || (window['chartjs-plugin-annotation']||{}));
 Chart.defaults.color = '#64748b';
@@ -324,6 +346,7 @@ function renderAll(){
   renderCruces();
   renderCualitativo();
   renderAvanzado();
+  renderReporte();
 }
 
 // ============ KPIs ============
@@ -633,6 +656,139 @@ function renderAvanzado(){
   });
   hmEl.style.gridTemplateColumns = `70px repeat(${cols},1fr)`;
   hmEl.innerHTML = hmHtml;
+}
+
+// ============ VISTA REPORTE (narrativa + tendencias %) ============
+function pctByMonth(colName, topN){
+  const cats = groupData(rawData, colName).slice(0,topN).map(x=>x[0]);
+  const monthTotals = new Array(12).fill(0);
+  rawData.forEach(r=>{ const d=parseDate(getCol(r,'FECHA')); if(d) monthTotals[d.getMonth()]++; });
+  const series = cats.map(cat=>{
+    const data = new Array(12).fill(0);
+    rawData.forEach(r=>{ const d=parseDate(getCol(r,'FECHA')); if(d && getCol(r,colName)===cat) data[d.getMonth()]++; });
+    return { name:cat, data: data.map((v,i)=> monthTotals[i]>0 ? +(v*100/monthTotals[i]).toFixed(1) : null) };
+  });
+  return series;
+}
+function monthsWithData(){
+  const monthTotals = new Array(12).fill(0);
+  rawData.forEach(r=>{ const d=parseDate(getCol(r,'FECHA')); if(d) monthTotals[d.getMonth()]++; });
+  return monthTotals.map((v,i)=>v>0?i:null).filter(i=>i!==null);
+}
+
+function renderReporte(){
+  const palette=[colors.main,colors.mainLight,colors.sky,colors.teal,colors.neu,colors.neg];
+  const labels = monthNames.map(m=>m.toUpperCase());
+  const activeMonths = monthsWithData();
+  const trimLabels = idx => idx.map(i=>labels[i]);
+  const trimData = (arr, idx) => idx.map(i=>arr[i]);
+
+  const medioSeries = pctByMonth('TIPO DE MEDIO', 4);
+  charts.medioPct = new Chart(document.getElementById('c-medio-pct'), {
+    type:'line',
+    data:{ labels: trimLabels(activeMonths), datasets: medioSeries.map((s,i)=>({label:s.name, data:trimData(s.data,activeMonths), borderColor:palette[i%palette.length], backgroundColor:palette[i%palette.length], tension:.3, borderWidth:2.5, pointRadius:3, spanGaps:true})) },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{tooltip:{...tooltipConfig, callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw}%`}}, legend:{position:'bottom', labels:{usePointStyle:true,boxWidth:8,font:{size:11}}}, datalabels:{display:false}}, scales:{y:{ticks:{callback:v=>v+'%'}, grid:{borderDash:[4,4]}}, x:{grid:{display:false}}} }
+  });
+
+  const temaSeries = pctByMonth('TEMA', 5);
+  charts.temaPct = new Chart(document.getElementById('c-tema-pct'), {
+    type:'line',
+    data:{ labels: trimLabels(activeMonths), datasets: temaSeries.map((s,i)=>({label:s.name, data:trimData(s.data,activeMonths), borderColor:palette[i%palette.length], backgroundColor:palette[i%palette.length], tension:.3, borderWidth:2.5, pointRadius:3, spanGaps:true})) },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{tooltip:{...tooltipConfig, callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw}%`}}, legend:{position:'bottom', labels:{usePointStyle:true,boxWidth:8,font:{size:11}}}, datalabels:{display:false}}, scales:{y:{ticks:{callback:v=>v+'%'}, grid:{borderDash:[4,4]}}, x:{grid:{display:false}}} }
+  });
+
+  const origenSeries = pctByMonth('ORIGEN', 5);
+  charts.origenPct = new Chart(document.getElementById('c-origen-pct'), {
+    type:'line',
+    data:{ labels: trimLabels(activeMonths), datasets: origenSeries.map((s,i)=>({label:s.name, data:trimData(s.data,activeMonths), borderColor:palette[i%palette.length], backgroundColor:palette[i%palette.length], tension:.3, borderWidth:2.5, pointRadius:3, spanGaps:true})) },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{tooltip:{...tooltipConfig, callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw}%`}}, legend:{position:'bottom', labels:{usePointStyle:true,boxWidth:8,font:{size:11}}}, datalabels:{display:false}}, scales:{y:{ticks:{callback:v=>v+'%'}, grid:{borderDash:[4,4]}}, x:{grid:{display:false}}} }
+  });
+
+  const isEntity = r => (getCol(r,'QUIÉN')||'').toUpperCase().includes(ENTITY_KEYWORD);
+  const isVocero = r => (getCol(r,'QUIÉN')||'').toUpperCase().includes(VOCERO_KEYWORD);
+  const monthTotals = new Array(12).fill(0);
+  rawData.forEach(r=>{ const d=parseDate(getCol(r,'FECHA')); if(d) monthTotals[d.getMonth()]++; });
+  const entPct=new Array(12).fill(null), vocPct=new Array(12).fill(null);
+  rawData.forEach(r=>{ const d=parseDate(getCol(r,'FECHA')); if(!d) return; });
+  activeMonths.forEach(i=>{
+    const rowsMonth = rawData.filter(r=>{ const d=parseDate(getCol(r,'FECHA')); return d && d.getMonth()===i; });
+    const ent = rowsMonth.filter(isEntity).length, voc = rowsMonth.filter(isVocero).length;
+    entPct[i] = monthTotals[i]>0 ? +(ent*100/monthTotals[i]).toFixed(1) : null;
+    vocPct[i] = monthTotals[i]>0 ? +(voc*100/monthTotals[i]).toFixed(1) : null;
+  });
+  charts.actorPct = new Chart(document.getElementById('c-actor-pct'), {
+    type:'line',
+    data:{ labels: trimLabels(activeMonths), datasets:[
+      {label:'Entidad', data:trimData(entPct,activeMonths), borderColor:colors.main, backgroundColor:colors.main, tension:.3, borderWidth:2.5, pointRadius:3, spanGaps:true},
+      {label:'Vocero', data:trimData(vocPct,activeMonths), borderColor:colors.sky, backgroundColor:colors.sky, tension:.3, borderWidth:2.5, pointRadius:3, spanGaps:true}
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{tooltip:{...tooltipConfig, callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw}%`}}, legend:{position:'bottom'}, datalabels:{display:false}}, scales:{y:{ticks:{callback:v=>v+'%'}, grid:{borderDash:[4,4]}}, x:{grid:{display:false}}} }
+  });
+
+  const rankMedios = groupData(rawData,'NOMBRE DEL MEDIO').slice(0,15);
+  charts.rankingMedios = new Chart(document.getElementById('c-ranking-medios'), {
+    type:'bar',
+    data:{ labels:rankMedios.map(x=>x[0]), datasets:[{data:rankMedios.map(x=>x[1]), backgroundColor:colors.main, borderRadius:6}] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{tooltip:tooltipConfig, legend:{display:false}, datalabels:{anchor:'end',align:'end',color:colors.main,font:{weight:'700',size:11}}}, scales:{x:{display:false},y:{grid:{display:false}}} }
+  });
+
+  // ---- Texto narrativo automático ----
+  const total = filteredData.length;
+  const prevTotal = prevData.length;
+  const diffPct = prevTotal>0 ? ((total-prevTotal)/prevTotal*100) : null;
+  const pos = filteredData.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Positiva').length;
+  const neu = filteredData.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Neutro').length;
+  const neg = filteredData.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Negativa').length;
+  let ave=0; filteredData.forEach(r=>{ if(determineSentiment(getCol(r,'CRITERIO'))==='Positiva') ave+=parseCurrency(getCol(r,'SOLES')); });
+  const topMedioTipo = groupData(filteredData,'TIPO DE MEDIO')[0];
+  const topTema = groupData(filteredData,'TEMA')[0];
+  const topOrigen = groupData(filteredData,'ORIGEN')[0];
+  const topMedioMencion = groupData(filteredData,'NOMBRE DEL MEDIO')[0];
+  const negRows = filteredData.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Negativa');
+  const topMedioNeg = groupData(negRows,'NOMBRE DEL MEDIO')[0];
+  const topTemaNeg = groupData(negRows,'TEMA')[0];
+  const dayObj={}; filteredData.forEach(r=>{ const f=getCol(r,'FECHA'); if(f) dayObj[f]=(dayObj[f]||0)+1; });
+  const peakDay = Object.entries(dayObj).sort((a,b)=>b[1]-a[1])[0];
+  const isEntity2 = r => (getCol(r,'QUIÉN')||'').toUpperCase().includes(ENTITY_KEYWORD);
+  const isVocero2 = r => (getCol(r,'QUIÉN')||'').toUpperCase().includes(VOCERO_KEYWORD);
+  const entRows = filteredData.filter(isEntity2), vocRows = filteredData.filter(isVocero2);
+  const entNeg = entRows.length? (entRows.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Negativa').length*100/entRows.length).toFixed(1):null;
+  const vocNeg = vocRows.length? (vocRows.filter(r=>determineSentiment(getCol(r,'CRITERIO'))==='Negativa').length*100/vocRows.length).toFixed(1):null;
+  const monthLabel = labels[parseInt(document.getElementById('month-select').value)];
+
+  const sec = (title, text) => `<div style="margin-bottom:16px"><h4 style="margin:0 0 6px;color:var(--primary);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.4px">${title}</h4><p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--text-dark)">${text}</p></div>`;
+
+  let html = '';
+  html += sec('Resumen ejecutivo',
+    `Durante ${monthLabel} se registraron <b>${total.toLocaleString('es-PE')}</b> menciones a la Municipalidad Metropolitana de Lima` +
+    (diffPct!==null ? `, lo que representa una variación de <b>${diffPct>=0?'+':''}${diffPct.toFixed(1)}%</b> respecto al mes anterior.` : '.') +
+    ` El ahorro publicitario estimado (AVE) por cobertura positiva fue de <b>${new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN',maximumFractionDigits:0}).format(ave)}</b>.`);
+
+  html += sec('Balance de sentimiento',
+    `La cobertura se distribuyó en <b>${total?((pos*100/total).toFixed(1)):'0'}% positiva</b>, <b>${total?((neu*100/total).toFixed(1)):'0'}% neutra</b> y <b>${total?((neg*100/total).toFixed(1)):'0'}% negativa</b>` +
+    (topMedioNeg ? `. El medio con mayor volumen de notas críticas fue <b>${topMedioNeg[0]}</b> (${topMedioNeg[1]} notas)` : '') +
+    (topTemaNeg ? `, concentradas principalmente en la temática de <b>${topTemaNeg[0]}</b>.` : '.'));
+
+  html += sec('Cobertura por tipo de medio',
+    (topMedioTipo ? `El canal predominante fue <b>${topMedioTipo[0]}</b> (${topMedioTipo[1]} menciones)` : 'No se registró información de tipo de medio') +
+    (topMedioMencion ? `, y el medio individual con más apariciones fue <b>${topMedioMencion[0]}</b> (${topMedioMencion[1]} menciones).` : '.'));
+
+  html += sec('Enfoque temático y origen',
+    (topTema ? `La temática con mayor cobertura fue <b>${topTema[0]}</b> (${topTema[1]} menciones)` : 'No se registró información temática') +
+    (topOrigen ? `, y el principal origen del posicionamiento fue <b>${topOrigen[0]}</b> (${topOrigen[1]} menciones), lo que indica el peso relativo de la agenda proactiva de comunicaciones frente a la reactiva.` : '.'));
+
+  html += sec('Actores institucionales',
+    (entRows.length || vocRows.length)
+      ? `La Entidad registró ${entRows.length} menciones (${entNeg!==null?entNeg+'% negativas':'sin datos de sentimiento'}) y el Vocero principal ${vocRows.length} menciones (${vocNeg!==null?vocNeg+'% negativas':'sin datos de sentimiento'}). ${entNeg!==null && vocNeg!==null ? (Math.abs(entNeg-vocNeg)>10 ? 'Existe una brecha relevante entre la imagen de ambos actores, lo que amerita revisar el balance de vocería.' : 'Ambos actores mantienen un nivel de negatividad similar.') : ''}`
+      : `No se identificaron menciones para las categorías configuradas de Entidad (${ENTITY_KEYWORD}) o Vocero (${VOCERO_KEYWORD}) — revisa las palabras clave en el código si tu columna "QUIÉN" usa otros nombres.`);
+
+  html += sec('Puntos de atención',
+    (peakDay ? `El pico informativo del mes fue el <b>${formatFriendlyDate(peakDay[0])}</b>, con ${peakDay[1]} menciones en un solo día. ` : '') +
+    `Se recomienda revisar la pestaña "Avanzado" para el detalle de anomalías de negatividad detectadas automáticamente y ajustar la vocería o el pitching de notas de prensa en función de los temas y medios más críticos identificados arriba.`);
+
+  html += `<p class="note" style="margin-top:4px">Borrador generado automáticamente el ${new Date().toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})} a partir de los datos filtrados para ${monthLabel}. Revisa y edita antes de publicar como informe oficial.</p>`;
+
+  document.getElementById('reporte-narrativo').innerHTML = html;
 }
 </script>
 </body>
